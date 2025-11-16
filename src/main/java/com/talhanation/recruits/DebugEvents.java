@@ -27,7 +27,7 @@ public class DebugEvents {
             case 10 -> {
                 int current =  recruits.getVariant();
                 int next = current + 1;
-                if(next > 89) next = 89;
+                if(next > 99) next = 99;
                 recruits.setVariant((byte) next);
             }
             case 11 -> {

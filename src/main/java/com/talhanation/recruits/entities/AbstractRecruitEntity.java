@@ -277,6 +277,7 @@ public abstract class AbstractRecruitEntity extends AbstractInventoryEntity{
     ////////////////////////////////////REGISTER////////////////////////////////////
 
     protected void registerGoals() {
+        this.goalSelector.addGoal(1, new FleeLowMoral(this));
         this.goalSelector.addGoal(4, new BlockWithWeapon(this));
         this.goalSelector.addGoal(0, new RecruitFloatGoal(this));
         this.goalSelector.addGoal(1, new RecruitQuaffGoal(this));
@@ -1433,41 +1434,13 @@ public abstract class AbstractRecruitEntity extends AbstractInventoryEntity{
     }
 
     public void applyMoralEffects(){
-        boolean panicked =  0 <= getMorale() && getMorale() < 20;
-        boolean lowMoral =  20 <= getMorale() && getMorale() < 40;
-        boolean highMoral =  90 <= getMorale() && getMorale() <= 100;
+        boolean panicked = 0 <= getMorale() && getMorale() < 10;
+        boolean lowMoral = 20 <= getMorale() && getMorale() < 40;
+        boolean highMoral = 90 <= getMorale() && getMorale() <= 100;
 
-        // Panic fleeing for very low morale (0-19)
-        if (panicked && !this.getFleeing() && !this.getCommandSenderWorld().isClientSide()) {
-            // Set fleeing flag
-            this.setFleeing(true);
-            // Generate random direction 100 blocks away
-            double angle = this.random.nextDouble() * 2 * Math.PI;
-            double distance = 100.0;
-            double dx = Math.cos(angle) * distance;
-            double dz = Math.sin(angle) * distance;
-            Vec3 fleePos = this.position().add(dx, 0, dz);
-            // Set move position to flee location
-            this.setMovePos(new BlockPos((int)fleePos.x, (int)this.getY(), (int)fleePos.z));
-            this.setFollowState(0); // Reset follow state to wander temporarily
-            this.setTarget(null); // Clear any targets
-        }
+        // УБРАНА ЛОГИКА ПОБЕГА - теперь она в FleeLowMoral.java
 
-        // Reset fleeing when morale improves
-        if (!panicked && this.getFleeing()) {
-            this.setFleeing(false);
-        }
-
-        // Original low morale effects commented out for morale 0-19
-        // if (panicked) {
-        //     if (!this.hasEffect(MobEffects.WEAKNESS))
-        //         this.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 200, 3, false, false, true));
-        //     if (!this.hasEffect(MobEffects.MOVEMENT_SLOWDOWN))
-        //         this.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 200, 2, false, false, true));
-        //     if (!this.hasEffect(MobEffects.CONFUSION))
-        //         this.addEffect(new MobEffectInstance(MobEffects.CONFUSION, 200, 1, false, false, true));
-        // }
-
+        // Эффекты низкой морали (20-39)
         if (lowMoral) {
             if (!this.hasEffect(MobEffects.WEAKNESS))
                 this.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 200, 1, false, false, true));
@@ -1475,11 +1448,24 @@ public abstract class AbstractRecruitEntity extends AbstractInventoryEntity{
                 this.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 200, 1, false, false, true));
         }
 
+        // Эффекты высокой морали (90-100)
         if (highMoral) {
             if (!this.hasEffect(MobEffects.DAMAGE_BOOST))
                 this.addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST, 200, 0, false, false, true));
             if (!this.hasEffect(MobEffects.DAMAGE_RESISTANCE))
                 this.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 200, 0, false, false, true));
+        }
+
+        // Снимаем эффекты когда мораль в нормальном диапазоне
+        if (!lowMoral && !highMoral) {
+            if (this.hasEffect(MobEffects.WEAKNESS) && this.getEffect(MobEffects.WEAKNESS).getAmplifier() <= 1)
+                this.removeEffect(MobEffects.WEAKNESS);
+            if (this.hasEffect(MobEffects.MOVEMENT_SLOWDOWN) && this.getEffect(MobEffects.MOVEMENT_SLOWDOWN).getAmplifier() <= 1)
+                this.removeEffect(MobEffects.MOVEMENT_SLOWDOWN);
+            if (this.hasEffect(MobEffects.DAMAGE_BOOST) && this.getEffect(MobEffects.DAMAGE_BOOST).getAmplifier() <= 0)
+                this.removeEffect(MobEffects.DAMAGE_BOOST);
+            if (this.hasEffect(MobEffects.DAMAGE_RESISTANCE) && this.getEffect(MobEffects.DAMAGE_RESISTANCE).getAmplifier() <= 0)
+                this.removeEffect(MobEffects.DAMAGE_RESISTANCE);
         }
     }
 
